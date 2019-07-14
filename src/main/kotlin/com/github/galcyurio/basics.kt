@@ -1,7 +1,5 @@
 package com.github.galcyurio
 
-import kotlinx.coroutines.*
-
 //fun main() {
 //    GlobalScope.launch { // launch a new coroutine in background and continue
 //        delay(1000L) // non-blocking delay for 1 second (default time unit is ms)
@@ -78,27 +76,128 @@ import kotlinx.coroutines.*
  * 현재의 쓰레드를 차단하지 않는다는 것입니다.
  * */
 
-fun main() = runBlocking {
-    launch {
-        delay(200L)
-        printlnThread("Task from runBlocking")
-    }
-
-    coroutineScope {
-        launch {
-            delay(500L)
-            printlnThread("Task from nested launch")
-        }
-
-        delay(100L)
-        printlnThread("Task from coroutine scope")
-    }
-
-    printlnThread("Coroutine scope is over")
-}
+//fun main() = runBlocking {
+//    launch {
+//        delay(200L)
+//        printlnThread("Task from runBlocking")
+//    }
+//
+//    coroutineScope {
+//        launch {
+//            delay(500L)
+//            printlnThread("Task from nested launch")
+//        }
+//
+//        delay(100L)
+//        printlnThread("Task from coroutine scope")
+//    }
+//
+//    printlnThread("Coroutine scope is over")
+//}
 
 // 실행결과
 // Thread[main,5,main] ||| Task from coroutine scope
 // Thread[main,5,main] ||| Task from runBlocking
 // Thread[main,5,main] ||| Task from nested launch
 // Thread[main,5,main] ||| Coroutine scope is over
+
+/**
+ * ### Non-official
+ *
+ * 위의 경우와 모두 같지만 [coroutineScope] 내부에서
+ * [launch]가 어떤 일을 하는건지 알아보기 위한 테스트입니다.
+ *
+ * 위와 비교해서 보면 [launch]를 사용하면 별도로 코루틴이 돌아갑니다.
+ * */
+//fun main() = runBlocking {
+//    launch {
+//        delay(200L)
+//        printlnThread("Task from runBlocking")
+//    }
+//
+//    coroutineScope {
+//        delay(500L)
+//        printlnThread("Task from nested launch")
+//
+//        launch {
+//            delay(100L)
+//            printlnThread("Task from coroutine scope")
+//        }
+//    }
+//
+//    printlnThread("Coroutine scope is over")
+//}
+
+// 실행결과
+// Thread[main,5,main] ||| Task from runBlocking
+// Thread[main,5,main] ||| Task from nested launch
+// Thread[main,5,main] ||| Task from coroutine scope
+// Thread[main,5,main] ||| Coroutine scope is over
+
+/**
+ * ## Extract function refactoring
+ *
+ * `launch {...}` 코드 블록을 별도의 함수로 추출해 봅시다.
+ * 이 코드에서 "Extract function"리팩토링을 수행하면 `suspend` 수정자를 가진 새로운 함수를 얻게됩니다.
+ *
+ * `suspending function`은 일반적인 함수과 마찬가지로 코루틴에서 사용할 수 있지만
+ * 추가 기능은 이러한 예에서 [delay]와 같은 다른 `suspending function`을 사용하여
+ * 동시 루틴 실행을 suspend(일시중단)할 수 있다는 것입니다.
+ * */
+
+//fun main() = runBlocking {
+//    launch { doWorld() }
+//    println("Hello,")
+//}
+//
+//suspend fun doWorld() {
+//    delay(1000L)
+//    println("World!")
+//}
+
+/**
+ * ## Coroutines ARE light-weight
+ *
+ * 10만개의 코루틴을 시작하고, 1초 후에 각 코루틴이 점을 찍습니다.
+ * 자, 스레드로 시도해보십시오. 무슨 일이 일어날 지?
+ * (대부분의 경우 코드에서 일종의 메모리 부족 오류가 발생합니다)
+ * */
+//fun main() = runBlocking {
+//    repeat(100_000) {
+//        launch {
+//            delay(1000L)
+//            printlnThread(".")
+//        }
+//    }
+//}
+
+//fun main() {
+//    repeat(100_000) {
+//        thread {
+//            Thread.sleep(1000L)
+//            printlnThread(".")
+//        }
+//    }
+//}
+
+/**
+ * ## Global coroutines are like daemon threads
+ *
+ * 다음 코드는 [GlobalScope]에서 "I'm sleeping"을 2초에 한 번 출력한 후
+ * 약간 지연 후 main 함수에서 반환하는 장기 실행 코루틴을 시작합니다.
+ * */
+
+//fun main() = runBlocking {
+//    GlobalScope.launch {
+//        repeat(1000) { i ->
+//            printlnThread("I'm sleeping $i ...")
+//            delay(500)
+//        }
+//    }
+//    delay(1300)
+//}
+
+// 실행결과
+// Thread[DefaultDispatcher-worker-1,5,main] ||| I'm sleeping 0 ...
+// Thread[DefaultDispatcher-worker-1,5,main] ||| I'm sleeping 1 ...
+// Thread[DefaultDispatcher-worker-1,5,main] ||| I'm sleeping 2 ...
