@@ -74,6 +74,21 @@ package com.github.galcyurio
  *
  * [runBlocking]과 [coroutineScope]가 다른 점은 [coroutineScope]는 모든 자식이 완료될 때까지 기다리는 동안
  * 현재의 쓰레드를 차단하지 않는다는 것입니다.
+ *
+ * ### Non-official
+ * 위의 차이점에 대한 추가적인 설명입니다.
+ *
+ * [runBlocking]과 [coroutineScope]의 차이는 `blocking`과 `suspending call`의 차이입니다.
+ * 아는 바와 같이 한 스레드에서 여러개의 코루팅을 동시에 실행할 수 있습니다.
+ * 이것은 스레드 생성 리소스가 무거워서 코루틴의 힘이 시작되는 곳입니다.
+ *
+ * `concurrent code`의 각 부분에 대한 스레드를 작성하는 대신 코루틴을 작성하고
+ * 하나 또는 가능한 다중 스레드(대부분 400개가 아닌 4개)에서 해당 코루틴을 실행하세요.
+ *
+ * blocking은 스레드를 block한다는 뜻입니다.
+ * 이것은 blocking call이 끝나기 전까지 어떠한 코루틴도 실행될 수 없다는 걸 의미합니다.
+ * 반대로 suspending은 코루틴을 suspend한다는 뜻입니다.
+ * **코루틴이 기다리는 동안 코루틴이 실행되고 있는 스레드에서 다른 코루틴이 실행될 수 있습니다.**
  * */
 
 //fun main() = runBlocking {
@@ -133,6 +148,7 @@ package com.github.galcyurio
 // Thread[main,5,main] ||| Task from nested launch
 // Thread[main,5,main] ||| Task from coroutine scope
 // Thread[main,5,main] ||| Coroutine scope is over
+
 
 /**
  * ## Extract function refactoring
