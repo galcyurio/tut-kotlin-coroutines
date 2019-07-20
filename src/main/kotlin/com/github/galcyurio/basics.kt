@@ -72,7 +72,7 @@ package com.github.galcyurio
  * 다른 빌더가 제공하는 코루틴 범위 외에, coroutineScope 빌더를 사용하여 자신의 범위를 선언할 수도 있습니다.
  * 코루틴 범위를 만들고 시작된 모든 자식이 완료될 때까지 완료되지 않습니다.
  *
- * [runBlocking]과 [coroutineScope]가 다른 점은 모든 자식이 완료될 때까지 기다리는 동안
+ * [runBlocking]과 [coroutineScope]가 다른 점은 [coroutineScope]는 모든 자식이 완료될 때까지 기다리는 동안
  * 현재의 쓰레드를 차단하지 않는다는 것입니다.
  * */
 
