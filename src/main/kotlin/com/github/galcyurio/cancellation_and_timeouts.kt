@@ -1,9 +1,5 @@
 package com.github.galcyurio
 
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeoutOrNull
-
 /**
  * ## Cancelling coroutine execution
  *
@@ -226,16 +222,16 @@ import kotlinx.coroutines.withTimeoutOrNull
  *
  * 또는 `withTimeout`과 유사하지만 예외를 던지지 않고 null을 반환하는 `withTimeoutOrNull` 함수를 사용할 수도 있습니다.
  * */
-fun main() = runBlocking {
-    val result = withTimeoutOrNull(1300) {
-        repeat(1000) { i ->
-            println("I'm sleeping $i ...")
-            delay(500)
-        }
-        "Done"
-    }
-    println("Result is $result")
-}
+//fun main() = runBlocking {
+//    val result = withTimeoutOrNull(1300) {
+//        repeat(1000) { i ->
+//            println("I'm sleeping $i ...")
+//            delay(500)
+//        }
+//        "Done"
+//    }
+//    println("Result is $result")
+//}
 // 실행결과
 // I'm sleeping 0 ...
 // I'm sleeping 1 ...
