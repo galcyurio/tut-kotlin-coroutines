@@ -39,6 +39,7 @@ class CoroutineContextAndDispatchers {
             // will get dispatched to DefaultDispatcher
             println("Default               : I'm working in thread ${Thread.currentThread().name}")
         }
+        @Suppress("EXPERIMENTAL_API_USAGE")
         launch(newSingleThreadContext("MyOwnThread")) {
             // will get its own new thread
             println("newSingleThreadContext: I'm working in thread ${Thread.currentThread().name}")
@@ -102,6 +103,16 @@ class CoroutineContextAndDispatchers {
 //    Unconfined      : After delay in thread kotlinx.coroutines.DefaultExecutor @coroutine#2
 //    main runBlocking: After delay in thread Test worker @coroutine#3
 
+    /**
+     * `runBlocking {...}` 컨텍스트를 상속받은 코루틴은 계속해서 `main` 스레드에서 작동하지만
+     * unconfined의 경우는 [delay] 함수가 사용하는 기본 executor 스레드에서 재개되었습니다.
+     *
+     * Unconfined dispatcher는 코루틴에서 일부 연산은 즉시 수행되어야 하기 때문에
+     * 코루틴을 나중에 실행할 필요가 없거나 원하지 않은 부작용을 유발하는
+     * 특별한 케이스에 도움이 되는 고급 메카니즘입니다.
+     * 일반적인 코드에서는 Unconfined dispatcher는 사용하지 않아야 합니다.
+     */
+    fun dummy2() {}
 
 
 }
