@@ -68,4 +68,40 @@ class CoroutineContextAndDispatchers {
      * 통해서 반드시 해제되거나 또는 가장 높은 수준의 변수에 저장된 후 다시 재사용되어야 합니다.
      */
     fun dummy1() {}
+
+
+    /**
+     * ## Unconfined vs confined dispatcher
+     *
+     * [Dispatchers.Unconfined] 코루틴 dispatcher는 첫번째 suspension 지점까지는 코루틴을 호출한 스레드에서 시작합니다.
+     * 그리고 suspension 이후 호출된 susepending function에 의해 완전히 결정된 스레드에서 재개됩니다.
+     * Unconfined dispatcher는 코루틴이 CPU 시간을 소비하지 않고 특정 스레드에만 국한된
+     * 공유 데이터(UI 등)을 업데이트하지 않을 때 적합합니다.
+     *
+     * 그 외에는 기본적으로 외부 [CoroutineScope]에 대한 dispatcher가 상속됩니다.
+     * [runBlocking] 코루틴을 위한 기본 dispatcher는 호출한 스레드에 한정되며
+     * 따라서 이를 상속하면 예측가능한 FIFO 스케쥴링을 사용하여 이 스레드에 실행을 한정하는 효과가 있습니다.
+     */
+    @Test fun `Unconfined vs confined dispatcher`() = runBlocking {
+        launch(Dispatchers.Unconfined) {
+            // not confined -- will work with main thread
+            println("Unconfined      : I'm working in thread ${Thread.currentThread().name}")
+            delay(500)
+            println("Unconfined      : After delay in thread ${Thread.currentThread().name}")
+        }
+        launch {
+            // context of the parent, main runBlocking coroutine
+            println("main runBlocking: I'm working in thread ${Thread.currentThread().name}")
+            delay(1000)
+            println("main runBlocking: After delay in thread ${Thread.currentThread().name}")
+        }
+        Unit
+    }
+//    Unconfined      : I'm working in thread Test worker @coroutine#2
+//    main runBlocking: I'm working in thread Test worker @coroutine#3
+//    Unconfined      : After delay in thread kotlinx.coroutines.DefaultExecutor @coroutine#2
+//    main runBlocking: After delay in thread Test worker @coroutine#3
+
+
+
 }
