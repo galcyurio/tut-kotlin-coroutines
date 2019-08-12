@@ -114,5 +114,81 @@ class CoroutineContextAndDispatchers {
      */
     fun dummy2() {}
 
+    /**
+     * ## Debugging coroutines and threads
+     *
+     * 코루틴은 한 스레드에서 suspend되고 다른 스레드에서 다시 시작할 수 있습니다.
+     * 단일 스레드 디스패처를 사용하더라도 코루틴이 수행한 작업, 위치 및 시기를 파악하기 어려울 수 있습니다.
+     * 스레드를 사용하는 응용 프로그램을 디버깅하는 일반적인 방법은 각 로그의 로그 파일에 스레드 이름을 출력하는 것입니다.
+     * 이 기능은 보편적으로 로깅 프레임워크에서 지원됩니다.
+     * 코루틴을 사용할 때 스레드 이름만으로는 많은 것을 알 수 없습니다.
+     * `kotlinx.coroutines`에는 디버깅 기능이 포함되어 있어 보다 쉽게 사용할 수 있습니다.
+     */
+    @Test
+    fun `Debugging coroutines and threads`() = runBlocking {
+        val a = async {
+            log("I'm computing a piece of the answer")
+            6
+        }
+        val b = async {
+            log("I'm computing another piece of the answer")
+            7
+        }
+        log("The answer is ${a.await() * b.await()}")
+    }
+//    [Test worker @coroutine#2] I'm computing a piece of the answer
+//    [Test worker @coroutine#3] I'm computing another piece of the answer
+//    [Test worker @coroutine#1] The answer is 42
+
+    fun log(msg: String) = println("[${Thread.currentThread().name}] $msg")
+
+    /**
+     * `log` 함수는 스레드 이름을 대괄호로 출력하며,
+     * 현재 실행중인 코루틴의 식별자가 추가된 main 스레드임을 알 수 있습니다.
+     * 이 식별자는 디버깅 모드가 켜져있을 때 생성된 모든 코루틴에 연속적으로 할당됩니다.
+     */
+    fun dummy3() {}
+
+    /**
+     * ## Jumping between threads
+     *
+     * 아래는 몇가지 새로운 기술들을 보여줍니다.
+     * 하나는 명시적으로 지정된 컨텍스트와 함께 [runBlocking]을 사용하는 것입니다.
+     * 그리고 다른 하나는 [withContext] 함수를 사용하여 아래 출력에서 볼 수 있듯이 여전히
+     * 동일한 코루틴에 머무르면서 코루틴의 컨텍스트를 변경합니다.
+     *
+     * 이 예제는 또한 Kotlin 표준 라이브러리의 use 함수를 사용하여
+     * 더 이상 필요하지 않은 newSingleThreadContext로 작성된 스레드를 해제합니다.
+     */
+    @Test
+    fun `Jumping between threads`() {
+        newSingleThreadContext("Ctx1").use { ctx1 ->
+            newSingleThreadContext("Ctx2").use { ctx2 ->
+                runBlocking(ctx1) {
+                    log("Started in ctx1")
+                    withContext(ctx2) {
+                        log("Working in ctx2")
+                    }
+                    log("Back to ctx1")
+                }
+            }
+        }
+    }
+//    [Ctx1 @coroutine#1] Started in ctx1
+//    [Ctx2 @coroutine#1] Working in ctx2
+//    [Ctx1 @coroutine#1] Back to ctx1
+
+    /**
+     * ## Job in the context
+     *
+     * 코루틴의 [Job]은 컨텍스트의 일부이며 `coroutineContext[Job]`을 통해서 가져 올 수도 있습니다.
+     *
+     * 참고: [CoroutineScope]의 [isActive]는 `coroutineContext[Job]?.isActive == true` 표현을 단축한 것입니다.
+     */
+    @Test
+    fun `Job in the context`() = runBlocking {
+        println("My job is ${coroutineContext[Job]}")
+    }
+//    My job is "coroutine#1":BlockingCoroutine{Active}@5d2cd86b
 
 }
