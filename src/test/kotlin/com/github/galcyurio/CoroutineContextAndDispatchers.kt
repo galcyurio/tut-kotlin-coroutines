@@ -25,7 +25,7 @@ class CoroutineContextAndDispatchers {
      *
      * [launch]와 [async]와 같은 모든 코루틴 빌더는 새로운 코루틴 및 다른 컨텍스트 요소에 대한
      * dispatcher를 명시적으로 지정하는 데 사용할 수 있는 선택적 [CoroutineContext] 매개변수가 있습니다.
-     * */
+     */
     @Test fun `Dispatchers and threads`() = runBlocking {
         launch {
             // context of the parent, main runBlocking coroutine

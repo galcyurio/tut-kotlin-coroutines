@@ -45,7 +45,7 @@ class CancellationAndTimeouts {
      * `kotlinx.coroutines`의 모든 `suspending function`은 취소 가능합니다.
      * 그들은 코루틴의 취소를 확인하고 취소할 때 [CancellationException]을 던집니다.
      * 그러나 코루틴이 계산에서 작동하고 취소를 확인하지 않으면 다음 예제와 같이 취소 할 수 없습니다.
-     * */
+     */
     @Test
     fun `Cancellation is cooperative`() = runBlocking {
         val startTime = System.currentTimeMillis()
@@ -86,8 +86,7 @@ class CancellationAndTimeouts {
      * 여기서는 후자의 방식으로 시도해보겠습니다.
      *
      * 이전 코드에서 `while (i < 5)` 부분을 `while (isActive)` 로 바꾸고 실행해보세요.
-     * Replace while (i < 5) in the previous example with while (isActive) and rerun it.
-     * */
+     */
     @Test
     fun `Making computation code cancellable`() = runBlocking {
         val startTime = System.currentTimeMillis()
@@ -119,7 +118,7 @@ class CancellationAndTimeouts {
      * 취소가능한 suspending function은 일반적인 방식으로 처리가능한 [CancellationException]을 던집니다.
      * 예를 들면, `try {...} finally {...}` 표현식이나 코틀린의 `use` 함수는
      * 코루틴이 취소될 때 정상적으로 finalization 작업을 실행합니다.
-     * */
+     */
     @Test
     fun `Closing resources with finally`() = runBlocking {
         val job = launch {
@@ -155,7 +154,7 @@ class CancellationAndTimeouts {
      *
      * 하지만 취소된 코루틴에서 suspend 해야하는 특이한 경우에는 다음 예제와 같이 `withContext` 함수와
      * `NonCancellable` 컨텍스트를 사용하여 해당 코드를 `withContext (NonCancellable) {...}`에 래핑할 수 있습니다.
-     * */
+     */
     @Test
     fun `Run non-cancellable block`() = runBlocking {
         val job = launch {
@@ -193,7 +192,7 @@ class CancellationAndTimeouts {
      * 코루틴의 실행을 취소하는 가장 실질적인 이유는 실행 시간이 timeout 되기 때문입니다.
      * 해당 작업에 대한 참조를 수동으로 추적하고 지연된 후에 별도의 코루틴을 실행하여
      * 추적했던 것을 취소할 수는 있지만 `withTimeout` 함수를 통해서도 가능합니다.
-     * */
+     */
     @Test
     fun Timeout() = runBlocking {
         withTimeout(1300L) {
@@ -226,7 +225,7 @@ class CancellationAndTimeouts {
      * 타임아웃이 발생하는 코드를 `try {...} catch (e: TimoutCancellationException) {...}` 블록을 통해 처리할 수 있습니다.
      *
      * 또는 `withTimeout`과 유사하지만 예외를 던지지 않고 null을 반환하는 `withTimeoutOrNull` 함수를 사용할 수도 있습니다.
-     * */
+     */
     @Test
     fun `Timeout 2`() = runBlocking {
         val result = withTimeoutOrNull(1300) {

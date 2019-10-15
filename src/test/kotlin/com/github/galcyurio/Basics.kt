@@ -67,7 +67,7 @@ class Basics {
      * 우리는 코드에서 구조화된 동시성을 사용할 수 있습니다.
      * [GlobalScope]에서 코루틴을 시작하는 대신에 우리가 일반적으로 스레드 (스레드는 항상 전역)와 같이하는 것처럼
      * 우리가 수행중인 작업의 특정 범위에서 코루틴을 시작할 수 있습니다.
-     * */
+     */
     @Test
     fun `Structured concurrency`() = runBlocking {
         launch {
@@ -101,7 +101,7 @@ class Basics {
      * 이것은 blocking call이 끝나기 전까지 어떠한 코루틴도 실행될 수 없다는 걸 의미합니다.
      * 반대로 suspending은 코루틴을 suspend한다는 뜻입니다.
      * **코루틴이 기다리는 동안 코루틴이 실행되고 있는 스레드에서 다른 코루틴이 실행될 수 있습니다.**
-     * */
+     */
     @Test
     fun `Scope builder`() = runBlocking {
         launch {
@@ -134,7 +134,7 @@ class Basics {
      * [launch]가 어떤 일을 하는건지 알아보기 위한 테스트입니다.
      *
      * 위와 비교해서 보면 [launch]를 사용하면 별도로 코루틴이 돌아갑니다.
-     * */
+     */
     @Test
     fun `Scope builder 2`() = runBlocking {
         launch {
@@ -169,7 +169,7 @@ class Basics {
      * `suspending function`은 일반적인 함수과 마찬가지로 코루틴에서 사용할 수 있지만
      * 추가 기능은 이러한 예에서 [delay]와 같은 다른 `suspending function`을 사용하여
      * 동시 루틴 실행을 suspend(일시중단)할 수 있다는 것입니다.
-     * */
+     */
     @Test
     fun `Extract function refactoring`() = runBlocking {
         launch { doWorld() }
@@ -185,9 +185,9 @@ class Basics {
      * ## Coroutines ARE light-weight
      *
      * 10만개의 코루틴을 시작하고, 1초 후에 각 코루틴이 점을 찍습니다.
-     * 자, 스레드로 시도해보십시오. 무슨 일이 일어날 지?
-     * (대부분의 경우 코드에서 일종의 메모리 부족 오류가 발생합니다)
-     * */
+     * 무슨 일이 일어날지 스레드로 시도해보십시오.
+     * (대부분의 경우 코드에서 일종의 메모리 부족 오류가 발생합니다.)
+     */
     @Test
     fun `Coroutines ARE light-weight`() = runBlocking {
         repeat(100_000) {
@@ -213,7 +213,7 @@ class Basics {
      *
      * 다음 코드는 [GlobalScope]에서 "I'm sleeping"을 2초에 한 번 출력한 후
      * 약간 지연 후 main 함수에서 반환하는 장기 실행 코루틴을 시작합니다.
-     * */
+     */
     @Test
     fun `Global coroutines are like daemon threads`() = runBlocking {
         GlobalScope.launch {
