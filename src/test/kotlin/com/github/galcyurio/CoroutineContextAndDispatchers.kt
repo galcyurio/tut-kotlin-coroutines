@@ -191,4 +191,39 @@ class CoroutineContextAndDispatchers {
     }
 //    My job is "coroutine#1":BlockingCoroutine{Active}@5d2cd86b
 
+    /**
+     * ## Children of a coroutine
+     *
+     * 코루틴이 다른 코루틴의 [CoroutineScope]에서 시작되면 [CoroutineScope.coroutineContext]를 통해
+     * 컨텍스트를 상속하며 새 코루틴의 작업은 부모(parent) 코루틴 작업의 자식(child)이 됩니다.
+     *
+     * 그런데 [GlobalScope]를 사용하여 코루틴을 시작하면 새 코루틴 작업의 부모가 없습니다.
+     * 따라서 시작된 범위와 독립적이며 독립적으로 작동합니다.
+     */
+    @Test
+    fun `Children of a coroutine`() = runBlocking<Unit> {
+        val request = launch {
+            // GlobalScope를 사용해서 두 개의 작업(job)을 만듭니다.
+            GlobalScope.launch {
+                println("job1: 나는 GlobalScope에서 독립적으로 실행됩니다!")
+                delay(1000)
+                println("job1: 나는 요청의 취소에 아무런 영향을 받지 않습니다")
+            }
+            // 그리고 다른 작업들은 부모 컨텍스트를 상속받습니다.
+            launch {
+                delay(100)
+                println("job2: 나는 요청한 코루틴의 자식입니다")
+                delay(1000)
+                println("job2: 나는 부모 요청이 취소되면 이 라인을 수행하지 않습니다")
+            }
+        }
+        delay(500)
+        request.cancel() // 요청 취소
+        delay(1000) // 무슨 일이 벌어지는지 확인하기 위해 1초 지연
+        println("main: 누가 요청 취소로부터 살아남았니?")
+    }
+//    job1: 나는 GlobalScope에서 독립적으로 실행됩니다!
+//    job2: 나는 요청한 코루틴의 자식입니다
+//    job1: 나는 요청의 취소에 아무런 영향을 받지 않습니다
+//    main: 누가 요청 취소로부터 살아남았니?
 }
