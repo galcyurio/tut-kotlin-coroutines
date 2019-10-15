@@ -226,4 +226,32 @@ class CoroutineContextAndDispatchers {
 //    job2: 나는 요청한 코루틴의 자식입니다
 //    job1: 나는 요청의 취소에 아무런 영향을 받지 않습니다
 //    main: 누가 요청 취소로부터 살아남았니?
+
+    /**
+     * ## 부모의 책임 (Parental responsibilities)
+     *
+     * 부모 코루틴은 항상 자식 코루틴들이 완료되기를 기다립니다.
+     * 부모는 자식이 시작한 모든 자식을 명시적으로 추적할 필요가 없으며
+     * [Job.join] 함수를 사용하여 끝에서 기다릴 필요도 없습니다.
+     */
+    @Test
+    fun `Parental responsibilities`() = runBlocking<Unit> {
+        val request = launch {
+            repeat(3) { i ->
+                launch {
+                    delay((i + 1) * 200L) // variable delay 200ms, 400ms, 600ms
+                    println("Coroutine $i is done")
+                }
+            }
+            println("request: 나는 완료했고 아직 실행중인 내 자식들을 명시적으로 join 하지 않습니다")
+        }
+        request.join() // 모든 자식을 포함한 요청의 완료를 기다린다.
+        println("요청이 완료되었습니다")
+    }
+//    request: 나는 완료했고 아직 실행중인 내 자식들을 명시적으로 join 하지 않습니다
+//    Coroutine 0 is done
+//    Coroutine 1 is done
+//    Coroutine 2 is done
+//    요청이 완료되었습니다
+
 }
