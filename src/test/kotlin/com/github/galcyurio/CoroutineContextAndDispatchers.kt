@@ -301,4 +301,87 @@ class CoroutineContextAndDispatchers {
         }
     }
 //    Thread[DefaultDispatcher-worker-1 @foobar#2,5,main] ||| I'm working in thread
+
+    /**
+     * ## Coroutine scope
+     *
+     * context, children, job에 대해 알아봅시다.
+     * 우리의 애플리케이션에 생명주기가 있는 객체가 있고 해당 객체가 코루틴은 아니라고 가정합시다.
+     *
+     * 예를 들어 우리가 안드로이드 애플리케이션을 만들고 안드로이드 Activity의 컨텍스트에서
+     * 다양한 코루틴을 시작하여 비동기 작업을 수행하여 데이터를 가져오고 업데이트하고
+     * 애니메이션을 수행하는 등의 작업을 수행합니다.
+     *
+     * activity가 파괴되면 메모리 누수를 방지하기 위해 모든 코루틴들은 취소되어야합니다.
+     * 물론 우리는 activity의 생명주기와 그 코루틴을 묶기 위해 컨텍스트와 작업을 수동으로 조작할 수 있습니다.
+     * 하지만 `kotlinx.coroutines`는 다음을 캡슐화하여 추상화된 클래스 [CoroutineScope]를 제공합니다.
+     *
+     * 모든 코루틴 빌더는 [CoroutineScope] 확장으로 선언되어 있으니 반드시 잘 알아두어야 합니다.
+     *
+     * 우리는 Activity의 생명주기에 연결된 [CoroutineScope]의 인스턴스를 만들어 코루틴의 생명주기를 관리합니다.
+     * [CoroutineScope] 인스턴스는 `CoroutineScope()` 또는 `MainScope()` 팩토리 함수를 통해서 만들 수 있습니다.
+     * 전자는 범용 scope를 생성하고 후자는 UI 애플리케이션에 대한 scope를 생성하며
+     * [Dispatchers.Main]을 기본 디스패처로 사용합니다.
+     */
+    class Activity {
+        private val mainScope = MainScope()
+
+        fun destroy() {
+            mainScope.cancel()
+        }
+        // to be continued ...
+    }
+
+    /**
+     * 또는 이 Activity 클래스에서 [CoroutineScope] 인터페이스를 구현할 수 있습니다.
+     * 가장 좋은 방법은 기본 팩토리 함수와 함께 위임을 사용하는 것입니다.
+     * 또한 원하는 디스패처(이 예제에서는 [Dispatchers.Default])를 scope와 결합할 수도 있습니다.
+     */
+    class Activity2 : CoroutineScope by CoroutineScope(Dispatchers.Default) {
+        // to be continued ...
+    }
+
+    class Activity3 : CoroutineScope by CoroutineScope(Dispatchers.Default) {
+        // private val mainScope = MainScope()
+
+        /**
+         * 이제 컨텍스트를 명시적으로 지정하지 않고도 Activity의 범위에서 코루틴을 시작할 수 있습니다.
+         * 데모를 위해 각각 다른 시간을 지연시키는 10개의 코루틴을 시작합니다.
+         */
+        fun doSomething() {
+            repeat(10) { i ->
+                launch {
+                    delay((i + 1) * 200L) // variable delay 200ms, 400ms, ... etc
+                    println("Coroutine $i is done")
+                }
+            }
+        }
+
+        fun destroy() {
+            // mainScope.cancel()
+            cancel()
+        }
+    }
+
+    /**
+     * 우리의 main 함수에서 Activity를 생성하고 `doSomething` 함수를 호출하고, 500ms 후에 Activity를 파괴해 봅시다.
+     * 그러면 `doSomething`에서 시작된 모든 코루틴을 취소합니다.
+     * Activity가 파괴된 후 조금 더 기다리더라도 더 이상 메시지가 출력되지 않기 때문에 알 수 있습니다.
+     *
+     * 결과를 보면 처음 두 코루틴만 메시지를 출력하고 나머지는 `Activity.destroy()`에서 `job.cancel()`을 한 번만 호출하면 취소됩니다.
+     */
+    @Test
+    fun `Coroutine scope`() = runBlocking {
+        val activity = Activity3()
+        activity.doSomething() // run test function
+        println("Launched coroutines")
+        delay(500L) // delay for half a second
+        println("Destroying activity!")
+        activity.destroy() // cancels all coroutines
+        delay(1000) // visually confirm that they don't work
+    }
+//    Launched coroutines
+//    Coroutine 0 is done
+//    Coroutine 1 is done
+//    Destroying activity!
 }
