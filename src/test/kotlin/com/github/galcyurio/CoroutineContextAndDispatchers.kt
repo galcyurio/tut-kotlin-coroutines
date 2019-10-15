@@ -2,6 +2,7 @@
 
 package com.github.galcyurio
 
+import com.github.galcyurio.support.printlnThread
 import kotlinx.coroutines.*
 import org.junit.Test
 import kotlin.coroutines.CoroutineContext
@@ -254,4 +255,50 @@ class CoroutineContextAndDispatchers {
 //    Coroutine 2 is done
 //    요청이 완료되었습니다
 
+    /**
+     * ## 디버깅을 위해 코루틴에 이름 지어주기 (Naming coroutines for debugging)
+     *
+     * 코루틴이 로그를 자주 기록할 때 자동으로 할당된 ID가 적합하며
+     * 동일한 코루틴에서 오는 로그 레코드와 연관지어 합쳐주면 됩니다.
+     *
+     * 그러나 코루틴이 특정 요청을 처리하거나 특정 백그라운드 작업을 수행할 때는
+     * 디버깅을 위해 명시적으로 이름을 지어주는 것이 좋습니다.
+     *
+     * [CoroutineName] 컨텍스트 요소는 스레드 이름과 동일한 용도로 사용됩니다.
+     * 디버깅 모드가 켜질 때 이 코루틴을 실행하는 스레드 이름에 포함됩니다.
+     */
+    @Test
+    fun `Naming coroutines for debugging`() = runBlocking<Unit> {
+        log("Started main coroutine")
+        val v1 = async(CoroutineName("v1coroutine")) {
+            delay(500)
+            log("Computing v1")
+            252
+        }
+        val v2 = async(CoroutineName("v2coroutine")) {
+            delay(1000)
+            log("Computing v2")
+            6
+        }
+        log("The answer for v1 / v2 = ${v1.await() / v2.await()}")
+    }
+//    [Test worker @coroutine#1] Started main coroutine
+//    [Test worker @v1coroutine#2] Computing v1
+//    [Test worker @v2coroutine#3] Computing v2
+//    [Test worker @coroutine#1] The answer for v1 / v2 = 42
+
+    /**
+     * ## 컨텍스트 요소 합치기 (Combining context elements)
+     *
+     * 가끔씩 코루틴 컨텍스트에 여러 요소들을 정의해야하는 경우가 있습니다.
+     * 이를 위해 `+` 연산자를 사용할 수 있습니다.
+     * 예를 들면 명시적으로 지정된 디스패처와 명시적으로 지정된 이름을 가진 코루틴을 시작할 수 있습니다.
+     */
+    @Test
+    fun `Combining context elements`() = runBlocking<Unit> {
+        launch(Dispatchers.Default + CoroutineName("foobar")) {
+            printlnThread("I'm working in thread")
+        }
+    }
+//    Thread[DefaultDispatcher-worker-1 @foobar#2,5,main] ||| I'm working in thread
 }
