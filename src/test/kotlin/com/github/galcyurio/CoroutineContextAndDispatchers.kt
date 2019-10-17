@@ -384,4 +384,56 @@ class CoroutineContextAndDispatchers {
 //    Coroutine 0 is done
 //    Coroutine 1 is done
 //    Destroying activity!
+
+    /**
+     * ## Thread-local data
+     *
+     * 때로는 일부 thread-local 데이터를 코루틴으로 또는 코루틴간에 전달하는 기능이 편리합니다.
+     * 그러나 특정 스레드에 구속되지 않으므로 수동으로 수행하면 boilerplate로 이어질 수 있습니다.
+     *
+     * [ThreadLocal]의 경우에는 [asContextElement] 확장 함수가 있습니다.
+     * 이 함수는 [ThreadLocal] 로부터 받은 값들을 유지하고
+     * 코루틴이 컨텍스트를 전활할 때마다 이를 복구하는 컨텍스트 요소를 생성합니다.
+     *
+     * 다음 예제에서 [Dispatchers.Default]를 이용해 백그라운드 스레드 풀에서 새로운 코루틴을 시작했기 때문에
+     * 스레드 풀과 다른 스레드에서 작동합니다.
+     * 그러나 코루틴이 실행되는 스레드와 관계없이 `threadLocal.asContextElement(value = "launch")`을 사용하여
+     * 지정한 스레드 로컬 변수의 값이 여전히 존재합니다.
+     */
+    @Test
+    fun `Thread-local data`() = runBlocking<Unit> {
+        val threadLocal = ThreadLocal<String>()
+        threadLocal.set("main")
+        printlnThread("Pre-main, thread local value: '${threadLocal.get()}'")
+        val job = launch(Dispatchers.Default + threadLocal.asContextElement(value = "launch")) {
+            printlnThread("Launch start, thread local value: '${threadLocal.get()}'")
+            yield()
+            printlnThread("After yield, thread local value: '${threadLocal.get()}'")
+        }
+        job.join()
+        printlnThread("Post-main, thread local value: '${threadLocal.get()}'")
+    }
+//    Thread[Test worker @coroutine#1,5,main]                ||| Pre-main, thread local value: 'main'
+//    Thread[DefaultDispatcher-worker-1 @coroutine#2,5,main] ||| Launch start, thread local value: 'launch'
+//    Thread[DefaultDispatcher-worker-3 @coroutine#2,5,main] ||| After yield, thread local value: 'launch'
+//    Thread[Test worker @coroutine#1,5,main]                ||| Post-main, thread local value: 'main'
+
+    /**
+     * 해당 컨텍스트 요소를 설정하는 것을 잊어버리기 쉽습니다.
+     * 만약 코루틴이 동작하는 스레드가 다르다면 코루틴에서 접근한 thread-local 변수는 예상치 못한 값을 가지게 될 수 있습니다.
+     * 이러한 상황을 피하려면 [ensurePresent] 메소드를 사용하여 부적절한 사용시에 빠르게 실패하는 것이 좋습니다.
+     *
+     * [ThreadLocal]는 first-class를 지원하며 기본 `kotlinx.coroutines`에서 제공하는 모든 것과 함께 사용할 수 있습니다.
+     * 그러나 한 가지 중요한 제한사항이 있습니다.
+     * 스레드 로컬이 변경되면 컨텍스트 요소가 모든 [ThreadLocal] 객체 액세스를 추적할 수 없기 때문에
+     * 새로운 값이 코루틴 호출자에게 전파되지 않으며 다음 중단(suspend)시에 값을 잃게 됩니다.
+     * 코루틴에서 스레드 로컬 값을 변경하려면 [withContext]를 사용하고 자세한 사항은 [asContextElement]를 참조하세요.
+     *
+     * 대안으로 `Counter(var i: Int)`와 같은 mutable box에 값을 저장하여 스레드 로컬 변수에 저장할 수 있습니다.
+     * 하지만 이 방법은 mutable box 변수의 잠재적인 동시적인 수정에 대한 동기화를 다루어야합니다.
+     *
+     * MDC 로깅, 트랜잭션 컨텍스트 또는 내부적으로 데이터 전달을 위해 스레드 로컬을 사용하는
+     * 다른 라이브러리와의 통합과 같은 사용법에 대해서는 [ThreadContextElement] 인터페이스 문서를 참조하세요.
+     */
+    fun dummy4() {}
 }
