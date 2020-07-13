@@ -84,4 +84,69 @@ class ExceptionHandling {
         }
         joinAll(job, deferred)
     }
+
+    /**
+     * ## 취소와 예외 (Cancellation and exceptions)
+     *
+     * 취소는 예외와 밀접한 관련이 있습니다.
+     * 코루틴은 취소를 위해 내부적으로 [CancellationException]을 사용하며 이 예외는 모든 핸들러에서 무시처리됩니다.
+     * 따라서 catch 블록으로 얻을 수 있는 추가 디버그 정보의 소스로만 사용해야 합니다.
+     * 코루틴이 [Job.cancel]로 취소되면 코루틴은 종료되지만 부모는 취소되지 않습니다.
+     */
+    @Test
+    fun `Cancellation and exceptions`() = runBlocking {
+        val job = launch {
+            val child = launch {
+                try {
+                    delay(Long.MAX_VALUE)
+                } finally {
+                    println("Child is cancelled")
+                }
+            }
+            yield()
+            println("Cancelling child")
+            child.cancel()
+            child.join()
+            yield()
+            println("Parent is not cancelled")
+        }
+        job.join()
+    }
+
+    /**
+     * 코루틴이 [CancellationException] 이외의 예외를 만나면 해당 예외로 부모를 취소합니다.
+     * 이 동작은 재정의할 수 없으며 structured concurrency에 대한 안정적인 코루틴을 제공하는데 사용됩니다.
+     * [CoroutineExceptionHandler] 구현체는 자식 코루틴에 사용되지 않습니다.
+     *
+     * > 이 예제에서 CoroutineExceptionHandler는 항상 GlobalScope에서 작성된 코 루틴에 설치됩니다.
+     * main runBlocking에서 실행되는 코루틴에 예외 핸들러를 설치하는 것은 핸들러가 설치되어
+     * 있음에도 불구하고 자식이 예외로 완료되면 main 코루틴이 항상 취소되므로 의미가 없습니다.
+     *
+     * 기존 예외는 모든 자식이 종료될 때만 부모에 의해 처리됩니다.
+     */
+    @Test
+    fun `Cancellation and exceptions 2`() = runBlocking {
+        val handler = CoroutineExceptionHandler { _, exception ->
+            println("CoroutineExceptionHandler got $exception")
+        }
+        val job = GlobalScope.launch(handler) {
+            launch { // the first child
+                try {
+                    delay(Long.MAX_VALUE)
+                } finally {
+                    withContext(NonCancellable) {
+                        println("Children are cancelled, but exception is not handled until all children terminate")
+                        delay(100)
+                        println("The first child finished its non cancellable block")
+                    }
+                }
+            }
+            launch { // the second child
+                delay(10)
+                println("Second child throws an exception")
+                throw ArithmeticException()
+            }
+        }
+        job.join()
+    }
 }
