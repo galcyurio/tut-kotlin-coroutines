@@ -4,6 +4,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.actor
 import kotlinx.coroutines.channels.produce
 import org.junit.Test
+import java.io.IOException
 
 /**
  * 이번 섹션에서는 예외 처리와 예외가 발생했을 때의 취소에 대해서 알아봅니다.
@@ -145,6 +146,61 @@ class ExceptionHandling {
                 delay(10)
                 println("Second child throws an exception")
                 throw ArithmeticException()
+            }
+        }
+        job.join()
+    }
+
+    /**
+     * ## Exceptions aggregation
+     *
+     * 여러개의 자식 코루틴이 실패하여 예외가 던져졌을 때 기본적인 규칙은 "첫 번째 예외가 우선" 이며
+     * 따라서 첫번째 예외가 처리됩니다.
+     * 첫번째 예외를 제외하고 나중에 일어난 모든 예외들은 첫번째 예외에 suppressed 예외로 첨부됩니다.
+     */
+    @Test
+    fun `Exceptions aggregation`() = runBlocking {
+        val handler = CoroutineExceptionHandler { _, exception ->
+            println("CoroutineExceptionHandler got $exception with suppressed ${exception.suppressed?.contentToString()}")
+        }
+        val job = GlobalScope.launch(handler) {
+            launch {
+                try {
+                    delay(Long.MAX_VALUE) // it gets cancelled when another sibling fails with IOException
+                } finally {
+                    throw ArithmeticException() // the second exception
+                }
+            }
+            launch {
+                delay(100)
+                throw IOException() // the first exception
+            }
+            delay(Long.MAX_VALUE)
+        }
+        job.join()
+    }
+
+    /**
+     * 취소 예외는 투명하며 기본적으로 래핑되지 않습니다.
+     */
+    @Test
+    fun `Exceptions aggregation 2`() = runBlocking {
+        val handler = CoroutineExceptionHandler { _, exception ->
+            println("CoroutineExceptionHandler got $exception")
+        }
+        val job = GlobalScope.launch(handler) {
+            val inner = launch { // all this stack of coroutines will get cancelled
+                launch {
+                    launch {
+                        throw IOException() // the original exception
+                    }
+                }
+            }
+            try {
+                inner.join()
+            } catch (e: CancellationException) {
+                println("Rethrowing CancellationException with original cause")
+                throw e // cancellation exception is rethrown, yet the original IOException gets to the handler
             }
         }
         job.join()
