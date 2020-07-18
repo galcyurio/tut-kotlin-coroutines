@@ -281,4 +281,29 @@ class ExceptionHandling {
             println("Caught an assertion error")
         }
     }
+
+    /**
+     * ### Exceptions in supervised coroutines
+     *
+     * 다른 job과 supervisor job의 또다른 중요한 차이점은 예외 처리입니다.
+     * 모든 자식은 에러 처리 메카니즘을 통해 예외를 처리해야 합니다.
+     *
+     * 차이점은 자식의 예외가 부모로 전파되지 않는다는 점에서 발생합니다.
+     * 이는 supervisorScope에서 직접 시작된 코루틴이 root 코루틴과 동일한 방식으로
+     * 해당 scope에 설정된 CoroutineExceptionHandler를 사용함을 의미합니다.
+     */
+    @Test
+    fun `Exceptions in supervised coroutines`() = runBlocking {
+        val handler = CoroutineExceptionHandler { _, exception ->
+            println("CoroutineExceptionHandler got $exception")
+        }
+        supervisorScope {
+            val child = launch(handler) {
+                println("The child throws an exception")
+                throw AssertionError()
+            }
+            println("The scope is completing")
+        }
+        println("The scope is completed")
+    }
 }
