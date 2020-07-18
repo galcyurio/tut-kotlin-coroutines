@@ -252,4 +252,33 @@ class ExceptionHandling {
             secondChild.join()
         }
     }
+
+    /**
+     * ### Supervision scope
+     *
+     * scoped concurrency를 위해서 [coroutineScope] 대신에 [supervisorScope]를 사용할 수 있습니다.
+     * 취소는 한 방향으로만 전파하고 모든 자식들은 자신이 실패했을 경우에만 자신을 취소합니다.
+     * 또한 [coroutineScope]와 마찬가지로 모든 자식들이 완료되기를 기다립니다.
+     */
+    @Test
+    fun `Supervision scope`() = runBlocking {
+        try {
+            supervisorScope {
+                val child = launch {
+                    try {
+                        println("The child is sleeping")
+                        delay(Long.MAX_VALUE)
+                    } finally {
+                        println("The child is cancelled")
+                    }
+                }
+                // Give our child a chance to execute and print using yield
+                yield()
+                println("Throwing an exception from the scope")
+                throw AssertionError()
+            }
+        } catch(e: AssertionError) {
+            println("Caught an assertion error")
+        }
+    }
 }
