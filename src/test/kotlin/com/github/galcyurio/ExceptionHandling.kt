@@ -205,4 +205,51 @@ class ExceptionHandling {
         }
         job.join()
     }
+
+    /**
+     * ## Supervision
+     *
+     * 이전에 공부했듯이 취소는 코루틴의 전체 계층을 통해 전파되는 양방향 관계입니다.
+     * 단방향 취소가 필요한 경우를 살펴봅시다.
+     *
+     * 이러한 요구 사항의 좋은 예는 해당 scope에 job이 정의 된 UI 구성 요소입니다.
+     * UI 자식 작업 중 하나가 실패하면 모든 UI 컴포넌트를 취소할 필요는 없습니다.
+     * 그러나 UI 구성 요소가 삭제되고 (작업이 취소되면) 결과가 더 이상 필요하지 않으므로 모든 하위 작업이 실패해야 합니다.
+     *
+     * 또 다른 예는 여러 하위 작업을 생성하고 실행을 감독하고 실패를 추적하고
+     * 실패한 작업만 다시 시작해야하는 서버 프로세스입니다.
+     *
+     * ### Supervision job
+     *
+     * [SupervisorJob]은 이러한 목적을 위해 사용됩니다.
+     * 취소가 아래쪽으로만 전파된다는 점을 제외하면 일반 Job과 비슷합니다.
+     */
+    @Test
+    fun `Supervision job`() = runBlocking {
+        val supervisor = SupervisorJob()
+        with(CoroutineScope(coroutineContext + supervisor)) {
+            // launch the first child -- its exception is ignored for this example (don't do this in practice!)
+            val firstChild = launch(CoroutineExceptionHandler { _, _ ->  }) {
+                println("The first child is failing")
+                throw AssertionError("The first child is cancelled")
+            }
+            // launch the second child
+            val secondChild = launch {
+                firstChild.join()
+                // Cancellation of the first child is not propagated to the second child
+                println("The first child is cancelled: ${firstChild.isCancelled}, but the second one is still active")
+                try {
+                    delay(Long.MAX_VALUE)
+                } finally {
+                    // But cancellation of the supervisor is propagated
+                    println("The second child is cancelled because the supervisor was cancelled")
+                }
+            }
+            // wait until the first child fails & completes
+            firstChild.join()
+            println("Cancelling the supervisor")
+            supervisor.cancel()
+            secondChild.join()
+        }
+    }
 }
